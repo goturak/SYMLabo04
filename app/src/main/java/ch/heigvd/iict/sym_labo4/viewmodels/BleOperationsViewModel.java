@@ -8,6 +8,10 @@ import android.bluetooth.BluetoothGattService;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.UUID;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -162,6 +166,31 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 mConnection = gatt; //trick to force disconnection
                 Log.d(TAG, "isRequiredServiceSupported - discovered services:");
 
+                //mConnection.discoverServices();
+
+
+                symService=mConnection.getService(UUID.fromString("3c0a1000-281d-4b48-b2a7-f15579a1c38f"));
+                timeService=mConnection.getService(UUID.fromString("00001805-0000-1000-8000-00805f9b34fb"));
+                if(symService==null || timeService ==null){
+                    return false;
+                }
+                integerChar= symService.getCharacteristic(UUID.fromString("3c0a1001-281d-4b48-b2a7-f15579a1c38f"));
+                if(integerChar==null){
+                    return false;
+                }
+                temperatureChar= symService.getCharacteristic(UUID.fromString("3c0a1002-281d-4b48-b2a7-f15579a1c38f"));
+                if(temperatureChar==null){
+                    return false;
+                }
+                buttonClickChar= symService.getCharacteristic(UUID.fromString("3c0a1003-281d-4b48-b2a7-f15579a1c38f"));
+                if(buttonClickChar==null){
+                    return false;
+                }
+                currentTimeChar= timeService.getCharacteristic(UUID.fromString("00002a2b-0000-1000-8000-00805f9b34fb"));
+                if(currentTimeChar==null){
+                    return false;
+                }
+
                 /* TODO
                     - Nous devons vérifier ici que le périphérique auquel on vient de se connecter possède
                       bien tous les services et les caractéristiques attendues, on vérifiera aussi que les
@@ -171,11 +200,12 @@ public class BleOperationsViewModel extends AndroidViewModel {
                  */
 
                 //FIXME si tout est OK, on retourne true, sinon la librairie appelera la méthode onDeviceNotSupported()
-                return false;
+                return true;
             }
 
             @Override
             protected void initialize() {
+                
                 /* TODO
                     Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
                     attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
