@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -106,6 +107,11 @@ public class BleActivity extends BaseTemplateActivity {
         this.bleViewModel.isConnected().observe(this, (isConnected) -> {
             updateGui();
         });
+
+        this.bleViewModel.getTemperature().observe(this, temperature -> {
+            TextView tempTextView = findViewById(R.id.tempValue);
+            tempTextView.setText(temperature.toString() +"°C");
+        });
     }
 
     @Override
@@ -181,10 +187,7 @@ public class BleActivity extends BaseTemplateActivity {
             builderScanSettings.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
             builderScanSettings.setReportDelay(0);
 
-            //we scan for any BLE device
-            //we don't filter them based on advertised services...
-            //TODO ajouter un filtre pour n'afficher que les devices proposant
-            // le service "SYM" (UUID: "3c0a1000-281d-4b48-b2a7-f15579a1c38f")
+
             ScanFilter scanFilter = new ScanFilter.Builder()
                     .setServiceUuid(ParcelUuid.fromString("3c0a1000-281d-4b48-b2a7-f15579a1c38f"))
                     .build();
@@ -222,4 +225,17 @@ public class BleActivity extends BaseTemplateActivity {
         }
     };
 
+    public void tempUpdate(View view) {
+        bleViewModel.readTemperature();
+    }
+
+    public void sendInteger(View view){
+        EditText integerTextField=findViewById(R.id.integerValue);
+        if(!integerTextField.getText().toString().isEmpty()){
+            int val= Integer.parseInt(integerTextField.getText().toString());
+            bleViewModel.sendInteger(val);
+            integerTextField.setText("");
+        }
+
+    }
 }

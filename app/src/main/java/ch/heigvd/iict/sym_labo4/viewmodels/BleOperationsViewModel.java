@@ -8,6 +8,8 @@ import android.bluetooth.BluetoothGattService;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.BleManagerCallbacks;
+import no.nordicsemi.android.ble.data.Data;
 
 public class BleOperationsViewModel extends AndroidViewModel {
 
@@ -33,6 +36,11 @@ public class BleOperationsViewModel extends AndroidViewModel {
         return mIsConnected;
     }
 
+
+    private final MutableLiveData<Integer> mTemperature = new MutableLiveData<>();
+    public LiveData<Integer> getTemperature() {
+        return mTemperature;
+    }
     //references to the Services and Characteristics of the SYM Pixl
     private BluetoothGattService timeService = null, symService = null;
     private BluetoothGattCharacteristic currentTimeChar = null, integerChar = null, temperatureChar = null, buttonClickChar = null;
@@ -75,6 +83,11 @@ public class BleOperationsViewModel extends AndroidViewModel {
     public boolean readTemperature() {
         if(!isConnected().getValue() || temperatureChar == null) return false;
         return ble.readTemperature();
+    }
+
+    public boolean sendInteger(int val) {
+        if(!isConnected().getValue() ||integerChar == null) return false;
+        return ble.sendInteger(val);
     }
 
     private BleManagerCallbacks bleManagerCallbacks = new BleManagerCallbacks() {
@@ -205,7 +218,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
             @Override
             protected void initialize() {
-                
+
                 /* TODO
                     Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
                     attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
@@ -228,12 +241,24 @@ public class BleOperationsViewModel extends AndroidViewModel {
         };
 
         public boolean readTemperature() {
-            /* TODO on peut effectuer ici la lecture de la caractéristique température
-                la valeur récupérée sera envoyée à l'activité en utilisant le mécanisme
-                des MutableLiveData
-                On placera des méthodes similaires pour les autres opérations...
-            */
-            return false; //FIXME
+            if (temperatureChar != null) {
+                readCharacteristic(temperatureChar).with((device, data) -> {
+                    mTemperature.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10);
+                }).enqueue();
+                return true;
+            }
+            return false;
+
+        }
+
+        public boolean sendInteger(int val) {
+            if (integerChar != null) {
+                ByteBuffer bb = ByteBuffer.allocate(4);
+                bb.putInt(val);
+                bb.order(ByteOrder.LITTLE_ENDIAN);
+                writeCharacteristic(integerChar, bb.array()).enqueue();
+            }
+            return false;
         }
     }
 }
