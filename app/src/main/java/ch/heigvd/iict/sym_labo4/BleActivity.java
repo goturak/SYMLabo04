@@ -110,7 +110,12 @@ public class BleActivity extends BaseTemplateActivity {
 
         this.bleViewModel.getTemperature().observe(this, temperature -> {
             TextView tempTextView = findViewById(R.id.tempValue);
-            tempTextView.setText(temperature.toString() +"°C");
+            tempTextView.setText(temperature.toString() +"°");
+        });
+
+        this.bleViewModel.getClickCount().observe(this, cc -> {
+            TextView tempTextView = findViewById(R.id.clickCounterValue);
+            tempTextView.setText(cc.toString() );
         });
     }
 

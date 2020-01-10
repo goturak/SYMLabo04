@@ -41,6 +41,12 @@ public class BleOperationsViewModel extends AndroidViewModel {
     public LiveData<Integer> getTemperature() {
         return mTemperature;
     }
+
+    private final MutableLiveData<Integer> mClickCounter = new MutableLiveData<>();
+    public LiveData<Integer> getClickCount() {
+        return mClickCounter;
+    }
+
     //references to the Services and Characteristics of the SYM Pixl
     private BluetoothGattService timeService = null, symService = null;
     private BluetoothGattCharacteristic currentTimeChar = null, integerChar = null, temperatureChar = null, buttonClickChar = null;
@@ -218,7 +224,9 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
             @Override
             protected void initialize() {
-
+                mClickCounter.setValue(0);
+                setNotificationCallback(buttonClickChar).with((device,data)->buttonClickedCallback());
+                enableNotifications(buttonClickChar).enqueue();
                 /* TODO
                     Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
                     attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
@@ -242,6 +250,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
         public boolean readTemperature() {
             if (temperatureChar != null) {
+                readCharacteristic(temperatureChar);
                 readCharacteristic(temperatureChar).with((device, data) -> {
                     mTemperature.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10);
                 }).enqueue();
@@ -249,6 +258,9 @@ public class BleOperationsViewModel extends AndroidViewModel {
             }
             return false;
 
+        }
+        private void buttonClickedCallback(){
+            mClickCounter.setValue(mClickCounter.getValue()+1);
         }
 
         public boolean sendInteger(int val) {
