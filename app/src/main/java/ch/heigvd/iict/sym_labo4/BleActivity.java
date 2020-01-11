@@ -109,13 +109,18 @@ public class BleActivity extends BaseTemplateActivity {
         });
 
         this.bleViewModel.getTemperature().observe(this, temperature -> {
-            TextView tempTextView = findViewById(R.id.tempValue);
-            tempTextView.setText(temperature.toString() +"°");
+            TextView textView = findViewById(R.id.tempValue);
+            textView.setText(temperature.toString() +"°");
         });
 
         this.bleViewModel.getClickCount().observe(this, cc -> {
-            TextView tempTextView = findViewById(R.id.clickCounterValue);
-            tempTextView.setText(cc.toString() );
+            TextView textView = findViewById(R.id.clickCounterValue);
+            textView.setText(cc.toString() );
+        });
+
+        this.bleViewModel.getDateString().observe(this, date -> {
+            TextView textView = findViewById(R.id.currentTimeValue);
+            textView.setText(date );
         });
     }
 
@@ -230,6 +235,10 @@ public class BleActivity extends BaseTemplateActivity {
         }
     };
 
+    public void sendCurrentTime(View view){
+        bleViewModel.sendCurrentTime();
+
+    }
     public void tempUpdate(View view) {
         bleViewModel.readTemperature();
     }

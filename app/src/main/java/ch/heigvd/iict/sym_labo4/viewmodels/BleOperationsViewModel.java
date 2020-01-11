@@ -10,6 +10,9 @@ import android.widget.Toast;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +39,11 @@ public class BleOperationsViewModel extends AndroidViewModel {
         return mIsConnected;
     }
 
+
+    private final MutableLiveData<String> mDateString = new MutableLiveData<>();
+    public LiveData<String> getDateString() {
+        return mDateString;
+    }
 
     private final MutableLiveData<Integer> mTemperature = new MutableLiveData<>();
     public LiveData<Integer> getTemperature() {
@@ -87,12 +95,22 @@ public class BleOperationsViewModel extends AndroidViewModel {
         d'interagir avec le périphérique depuis l'activité
      */
     public boolean readTemperature() {
-        if(!isConnected().getValue() || temperatureChar == null) return false;
+        if(!isConnected().getValue() || temperatureChar == null) {
+            return false;
+        }
         return ble.readTemperature();
     }
 
+    public boolean sendCurrentTime(){
+        if(!isConnected().getValue() ||integerChar == null){
+            return false;
+        }
+        return ble.sendCurrentTime();
+    }
     public boolean sendInteger(int val) {
-        if(!isConnected().getValue() ||integerChar == null) return false;
+        if(!isConnected().getValue() ||integerChar == null) {
+            return false;
+        }
         return ble.sendInteger(val);
     }
 
@@ -227,6 +245,9 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 mClickCounter.setValue(0);
                 setNotificationCallback(buttonClickChar).with((device,data)->buttonClickedCallback());
                 enableNotifications(buttonClickChar).enqueue();
+
+                setNotificationCallback(currentTimeChar).with((device,data)->getTimeFromDevice(data));
+                enableNotifications(currentTimeChar).enqueue();
                 /* TODO
                     Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
                     attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
@@ -261,6 +282,63 @@ public class BleOperationsViewModel extends AndroidViewModel {
         }
         private void buttonClickedCallback(){
             mClickCounter.setValue(mClickCounter.getValue()+1);
+        }
+
+
+        private void getTimeFromDevice(Data data){
+            byte[] dataByteArray=data.getValue();
+
+            ByteBuffer bbYear= ByteBuffer.allocate(2);
+            bbYear.put(dataByteArray[1]);
+            bbYear.put(dataByteArray[0]);
+            bbYear.flip();
+          //  bbYear.order(ByteOrder.BIG_ENDIAN);
+            short year=bbYear.getShort();
+            byte month = dataByteArray[2];
+            byte dayOfMonth = dataByteArray[3];
+            byte hour = dataByteArray[4];
+            byte minute = dataByteArray[5];
+            byte seconds = dataByteArray[6];
+            byte dayOfWeek = dataByteArray[7];
+
+            Calendar calendar = new GregorianCalendar();
+            calendar.set(year,month,dayOfMonth,hour,minute,seconds);
+            calendar.set(Calendar.DAY_OF_WEEK,dayOfWeek);
+
+            SimpleDateFormat fmt = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            fmt.setCalendar(calendar);
+            String currentTimeFormatted = fmt.format(calendar.getTime());
+            mDateString.setValue(currentTimeFormatted);
+        }
+
+        public boolean sendCurrentTime(){
+            if(currentTimeChar!=null) {
+                Calendar calendar = new GregorianCalendar();
+                Date currentTime = Calendar.getInstance().getTime();
+                calendar.setTime(currentTime);
+
+                short year = (short) calendar.get(Calendar.YEAR);
+                byte month = (byte) (calendar.get(Calendar.MONTH) +1) ;
+                byte dayOfMonth = (byte) calendar.get(Calendar.DAY_OF_MONTH);
+                byte hour = (byte) calendar.get(Calendar.HOUR_OF_DAY);
+                byte minute = (byte) calendar.get(Calendar.MINUTE);
+                byte seconds = (byte) calendar.get(Calendar.SECOND);
+                byte dayOfWeek = (byte) calendar.get(Calendar.DAY_OF_WEEK);
+               // byte fraction= (byte) calendar.get(Calendar.)
+                ByteBuffer bbDate = ByteBuffer.allocate(10);
+                bbDate.put((byte)(year & 0xFF));
+                bbDate.put((byte)((year >> 8) & 0xFF));
+                bbDate.put(month);
+                bbDate.put(dayOfMonth);
+                bbDate.put(hour);
+                bbDate.put(minute);
+                bbDate.put(seconds);
+                bbDate.put(dayOfWeek);
+                //bb.order(ByteOrder.LITTLE_ENDIAN);
+                writeCharacteristic(currentTimeChar, bbDate.array()).enqueue();
+                return true;
+            }
+            return false;
         }
 
         public boolean sendInteger(int val) {

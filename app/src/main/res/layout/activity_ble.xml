@@ -100,7 +100,7 @@
                     android:id="@+id/CurrentTimeTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/ble_sendvalue_title"
+                    android:text="@string/ble_currenttime_title"
                     android:textSize="18sp" />
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -117,7 +117,7 @@
                         android:id="@+id/SetTimeButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:onClick="sendInteger"
+                        android:onClick="sendCurrentTime"
                         android:text="@string/ble_currenttime_set" />
 
 
